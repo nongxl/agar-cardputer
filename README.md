@@ -1,130 +1,63 @@
-Agar.io Clone
-=============
+# Agar-Cardputer
 
-This project was originally created by @huytd. I have since taken ownership of the repository to revive the project.
+![Cover](./cover.jpg)
 
-[![GitHub Stars](https://img.shields.io/github/stars/huytd/agar.io-clone.svg)](https://github.com/huytd/agar.io-clone/stargazers)
-[![GitHub Issues](https://img.shields.io/github/issues/huytd/agar.io-clone.svg)](https://github.com/huytd/agar.io-clone/issues)
-[![GitHub Wiki](https://img.shields.io/badge/project-wiki-ff69b4.svg)](https://github.com/huytd/agar.io-clone/wiki/Home)
-[![Live Demo](https://img.shields.io/badge/demo-online-green.svg)](#live-demos)
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/huytd/agar.io-clone?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-A simple but powerful Agar.IO clone built with socket.IO and HTML5 canvas on top of NodeJS.
-
-![Image](screenshot.png)
-
-## Live Demos
-An updated live list of demos can be found on the [Live Demos wiki page](https://github.com/owenashurst/agar.io-clone/wiki/Live-Demos).
-
-This is the most up to date version from master. Any merged pull requests will deploy to this URL automatically.
+[中文版](./README.md#中文版) | [English Version](./README.md#english-version)
 
 ---
 
-## How to Play
-You can check out how to play on our [wiki](https://github.com/owenashurst/agar.io-clone/wiki/How-to-Play).
+## 中文版
 
-#### Game Basics
-- Move your mouse around the screen to move your cell.
-- Eat food and other players in order to grow your character (food respawns every time a player eats it).
-- A player's **mass** is the number of food particles eaten.
-- **Objective**: Try to get as big as possible and eat other players.
+### 简介
+**Agar-Cardputer** 是一款专为 M5Cardputer 硬件深度定制的多人联机竞技游戏。基于原生 **ESP-NOW** 技术实现免路由低延迟通讯，让您与家人朋友即刻开启多设备同屏吞噬大战。
 
-#### Gameplay Rules
-- Players who haven't eaten yet cannot be eaten as a sort of "grace" period. This invincibility fades once they gain mass.
-- Everytime a player joins the game, **3** food particles will spawn.
-- Everytime a food particle is eaten by a player, **1** new food particle will respawn.
-- The more food you eat, the slower you move to make the game fairer for all.
+### 🚀 核心特色
+- **零配置联机**：利用 ESP-NOW 黑科技，两台设备开机即可自动组网，无需 WiFi 路由器。
+- **航位推算 (Dead Reckoning)**：内置高级位移预测算法，提供 20Hz 的丝滑物理手感，消除网络频闪。
+- **末世资源模式**：全图固定 30,000 点总质量。随着资源耗尽，生存竞争将愈发激烈。
+- **高精度判定**：基于极坐标投影的碰撞检测，小球可穿梭于刺球缝隙，大球擦边即炸。
 
----
+### 🎮 操作指南
+| 按键 | 功能 |
+| :--- | :--- |
+| **IMU/方向键** | 控制球体移动 |
+| **ESC** | 切换排行榜显示/隐藏 |
+| **`-` / `+`** | 调节视野缩放 (0.1x - 1.3x) |
 
-## Latest Changes
-- Game logic is handled by the server
-- The client side is for rendering of the canvas and its items only.
-- Mobile optimisation.
-- Implementation of working viruses.
-- Display player name.
-- Now supporting chat. 
-- Type`-ping` in the chatbox to check your ping, as well as other commands!
+### 🛠 技术规格
+- **刷新率**：上行 20Hz (输入) / 下行 12.5Hz (状态广播，预测补全至 20Hz)。
+- **成长公式**：`Radius = 15 + sqrt(score) * 2.5` (面积与质量线性一致)。
+- **协议載荷**：`StateMsg` (238 字节)，完美契合 ESP-NOW 250 字节上限。
 
 ---
 
-## Installation
-You can simply click one of the buttons below to easily deploy this repo to Bluemix or Heroku:
+## English Version
 
-[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+### Introduction
+**Agar-Cardputer** is a high-performance local multiplayer competitive game tailored exclusively for the M5Cardputer hardware. Powered by native **ESP-NOW**, it enables instant, router-free, low-latency cross-device predation battles with your friends and family.
 
-Or...
+### 🚀 Key Features
+- **Zero-Config Multiplayer**: Instant P2P networking via ESP-NOW. No WiFi router required.
+- **Dead Reckoning**: Advanced movement prediction provides a silky-smooth 20Hz experience, eliminating network jitter.
+- **End of Days Mode**: Hardcore resource management with a fixed 30,000 global mass pool.
+- **Precision Collision**: High-fidelity detection allowing small players to use gaps in viruses for tactical escapes.
 
->You can check out a more detailed setup tutorial on our [wiki](https://github.com/owenashurst/agar.io-clone/wiki/Setup).
+### 🎮 Control Guide
+| Key | Function |
+| :--- | :--- |
+| **IMU / Arrows** | Move the cell |
+| **ESC** | Toggle Leaderboard visibility |
+| **`-` / `+`** | Adjust View Zoom (0.1x - 1.3x) |
 
-#### Requirements
-To run / install this game, you'll need: 
-- NodeJS with NPM installed.
-- socket.IO.
-- Express.
-
-
-#### Downloading the dependencies
-After cloning the source code from Github, you need to run the following command to download all the dependencies (socket.IO, express, etc.):
-
-```
-npm install
-```
-
-#### Running the Server
-After downloading all the dependencies, you can run the server with the following command:
-
-```
-npm start
-```
-
-The game will then be accessible at `http://localhost:3000`. The default port is `3000`, however this can be changed in config. Further elaboration is available on our [wiki](https://github.com/owenashurst/agar.io-clone/wiki/Setup).
-
-
-### Running the Server with Docker
-If you have [Docker](https://www.docker.com/) installed, after cloning the repository you can run the following commands to start the server and make it acessible at `http://localhost:3000`:
-
-```
-docker build -t agarioclone_agar .
-docker run -it -p 3000:3000 agarioclone_agar
-```
+### 🛠 Technical Specifications
+- **Sync Rate**: 20Hz Upstream (Input) / 12.5Hz Downstream (State Broadcast, predicted to 20Hz).
+- **Growth Model**: `Radius = 15 + sqrt(score) * 2.5` (Linear alignment of area and mass).
+- **Payload**: `StateMsg` (238 Bytes), optimized for ESP-NOW's 250-byte limit.
 
 ---
 
-## FAQ
-1. **What is this game?**
+### 📦 部署 (Deploy)
+已发布至M5bunner
 
-  This is a clone of the game [Agar.IO](http://agar.io/). Someone said that Agar.IO is a clone of an iPad game called Osmos, but we haven't tried it yet. (Cloneception? :P)
-  
-2. **Why would you make a clone of this game?**
-
-  Well, while the original game is still online, it is closed-source, and sometimes, it suffers from massive lag. That's why we want to make an open source version of it: for educational purposes, and to let the community add the features that they want, self-host it on their own servers, have fun with friends and more.
-  
-3. **Any plans on adding an online server to compete with Agar.IO or making money out of it?**
-
-  No. This game belongs to the open-source community, and we have no plans on making money out of it nor competing with anything. But you can of course create your own public server, let us know if you do so and we can add it to our Live Demos list!
-  
-4. **Can I deploy this game to my own server?**
-
-  Sure you can! That's what it's made for! ;)
-  
-5. **I don't like HTML5 canvas. Can I write my own game client with this server?**
-
-  Of course! As long as your client supports WebSockets, you can write your game client in any language/technology, even with Unity3D if you want (there is an open source library for Unity to communicate with WebSockets)!
-  
-6. **Can I use some code of this project on my own?**
-
-  Yes you can.
-
-## For Developers
- - [Game Architecture](https://github.com/owenashurst/agar.io-clone/wiki/Game-Architecture) to understand how the backend works.
- - If you want to start your own project, I recommend you use [this template](https://github.com/huytd/node-online-game-template). Happy developing!
- -
-
-## TODOs
- We have an explicit [TODO](https://github.com/owenashurst/agar.io-clone/wiki/Coming-Features) list for the all the features we aim to develop in the future. Feel free to contribute, we'll be more than grateful.
-
-## License
->You can check out the full license [here](https://github.com/owenashurst/agar.io-clone/blob/master/LICENSE).
-
-This project is licensed under the terms of the **MIT** license.
+---
+**Agar-Cardputer - 极致丝滑，末路称王。/ Dominate the arena with precision.**
