@@ -294,11 +294,11 @@ void Render::drawMenuUI(GameState& state, uint8_t selected_idx, bool flash, bool
     _canvas.setTextSize(2);
     _canvas.drawString("AGAR-CARDPUTER", 120, 35);
 
-    // [V66] 增加版本号显示并修复对齐重置
+    // [V67] 增加版本号显示并修复对齐重置
     _canvas.setTextSize(1);
     _canvas.setTextColor(TFT_DARKGREY);
     _canvas.setTextDatum(top_left);
-    _canvas.drawString("v1.1", 120 + 85, 24);
+    _canvas.drawString("v1.2", 120 + 85, 24);
 
     _canvas.setTextDatum(middle_center); // 关键：恢复居中对齐，防止后续菜单选项偏移
     _canvas.setTextSize(1);

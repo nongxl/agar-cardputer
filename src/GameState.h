@@ -70,6 +70,16 @@ public:
     void setDemoMode(bool enable);
     bool getDemoMode() { return is_demo_mode; }
     bool isInitialized() { return is_initialized; } // [V41]
+    
+    // [V68] 震动请求接口
+    uint16_t getVibrationRequest() { 
+        uint16_t res = vibration_requested_ms; 
+        vibration_requested_ms = 0; 
+        return res; 
+    }
+    void requestVibration(uint16_t ms) {
+        if (ms > vibration_requested_ms) vibration_requested_ms = ms;
+    }
 
     // [V38] 亚像素精度访问接口
     float getRealX(uint8_t id) { return (id < MAX_PLAYERS) ? realX[id] : 0; }
@@ -107,6 +117,7 @@ private:
     uint32_t world_mass_pool; 
     bool gameOver;            
     uint8_t winner_id;        
+    uint16_t vibration_requested_ms; // [V68]
     
     void applyMovement(uint8_t id, int8_t dx, int8_t dy);
     void spawnFood(int index);

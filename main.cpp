@@ -6,12 +6,14 @@
 #include "src/espnow_comm.h"
 #include "src/Sync.h"
 #include "src/Input.h"
+#include "src/Haptics.h"
 
 GameState* g_game = nullptr;
 Render* g_renderer = nullptr;
 EspNowComm* g_comm = nullptr;
 SyncManager* g_sync_mgr = nullptr;
-GameInput* g_input = nullptr; // [V56] 输入控制器实例化
+GameInput* g_input = nullptr; 
+HapticManager* g_haptics = nullptr; // [V68]
 
 bool g_is_master = false;
 bool g_game_started = false;
@@ -102,8 +104,13 @@ void onMessageReceived(const uint8_t* mac_addr, const uint8_t* data, int len) {
 
 void setup() {
     auto cfg = M5.config();
-    M5.begin(cfg);
-    M5Cardputer.begin(cfg, true);
+    // [V67] 适配多种硬件初始化：如果是 Cardputer 则调用其专用 begin，否则仅使用 M5Unified
+    if (M5.getBoard() == m5::board_t::board_M5Cardputer) {
+        M5Cardputer.begin(cfg, true);
+    } else {
+        M5.begin(cfg);
+    }
+
     M5.Display.setRotation(1);
     
     // [V56] 启动硬件 IMU
@@ -114,7 +121,9 @@ void setup() {
     g_renderer->init(&M5.Display);
     g_comm = new EspNowComm();
     g_sync_mgr = new SyncManager();
-    g_input = new GameInput(); // [V56]
+    g_input = new GameInput(); 
+    g_haptics = new HapticManager(); // [V68]
+    g_haptics->init();
     
     memset(g_slave_macs, 0, sizeof(g_slave_macs));
     g_game->setDemoMode(true);
@@ -122,8 +131,13 @@ void setup() {
 }
 
 void loop() {
-    M5Cardputer.update();
+    M5.update(); // [V67] 统一使用 M5.update()
     g_input->update(); // [V56] 关键：每帧采集硬件状态
+    g_haptics->update(); // [V68] 处理震动停止
+    
+    // 处理游戏逻辑产生的震动请求
+    uint16_t vibr_ms = g_game->getVibrationRequest();
+    if (vibr_ms > 0) g_haptics->vibrate(vibr_ms);
     
     unsigned long now = millis();
     static uint32_t lastTickTime = 0;
@@ -185,13 +199,18 @@ void loop() {
         } else if (g_item_flash_timer == 0) { 
             if (g_input->keyPressed(';')) {
                 if (g_selected_menu_idx > 0) g_selected_menu_idx--;
+                else g_selected_menu_idx = 1; // [V69] 循环切换
+                g_haptics->vibrate(40);
                 delay(150); 
             } else if (g_input->keyPressed('.')) {
                 if (g_selected_menu_idx < 1) g_selected_menu_idx++;
+                else g_selected_menu_idx = 0; // [V69] 循环切换
+                g_haptics->vibrate(40);
                 delay(150);
             } else if (g_input->isEnterPressed()) { 
                 if (g_confirm_flash_timer == 0 && g_item_flash_timer == 0) {
                     g_item_flash_timer = millis() + 400; 
+                    g_haptics->vibrate(100); // 确认震动
                 }
             }
         }

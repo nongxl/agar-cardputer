@@ -22,7 +22,8 @@
 | :--- | :--- |
 | **IMU/方向键** | 控制球体移动 |
 | **ESC** | 切换排行榜显示/隐藏 |
-| **`-` / `+`** | 调节视野缩放 (0.1x - 1.3x) |
+| **`-` / `+` (Cardputer)** | 调节视野缩放 (0.1x - 1.3x) |
+| **BtnA / BtnB (StickS3)** | 放大 / 缩小 视野 |
 
 ### 🛠 技术规格
 - **刷新率**：上行 20Hz (输入) / 下行 12.5Hz (状态广播，预测补全至 20Hz)。
@@ -47,7 +48,8 @@
 | :--- | :--- |
 | **IMU / Arrows** | Move the cell |
 | **ESC** | Toggle Leaderboard visibility |
-| **`-` / `+`** | Adjust View Zoom (0.1x - 1.3x) |
+| **`-` / `+` (Cardputer)** | Adjust View Zoom (0.1x - 1.3x) |
+| **BtnA / BtnB (StickS3)** | Zoom In / Zoom Out |
 
 ### 🛠 Technical Specifications
 - **Sync Rate**: 20Hz Upstream (Input) / 12.5Hz Downstream (State Broadcast, predicted to 20Hz).

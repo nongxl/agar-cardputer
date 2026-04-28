@@ -4,11 +4,22 @@
 GameInput::GameInput() : dx(0), dy(0), imu_enabled(true) {}
 
 bool GameInput::keyPressed(char k) {
-    return M5Cardputer.Keyboard.isKeyPressed(k);
+    // [V67] 兼容 StickS3 硬件按键映射
+    if (M5.getBoard() == m5::board_t::board_M5Cardputer) {
+        if (M5Cardputer.Keyboard.isKeyPressed(k)) return true;
+    } else {
+        // StickS3 映射逻辑
+        if ((k == '=' || k == '+') && M5.BtnA.isPressed()) return true;
+        if ((k == '-' || k == '_') && M5.BtnB.isPressed()) return true;
+        
+        // [V67] 菜单切换适配：BtnB 仅映射为 '.' (Next) 键，配合 main.cpp 的循环逻辑
+        if (k == '.' && M5.BtnB.wasPressed()) return true;
+    }
+    return false;
 }
 
 bool GameInput::keyTriggered(char k) {
-    if (M5Cardputer.Keyboard.isKeyPressed(k)) {
+    if (keyPressed(k)) {
         for (char c : _last_keys) { if (c == k) return false; }
         return true;
     }
@@ -45,7 +56,11 @@ bool GameInput::isSpacePressed() {
 }
 
 bool GameInput::isEnterPressed() {
-    return M5Cardputer.Keyboard.keysState().enter;
+    if (M5.getBoard() == m5::board_t::board_M5Cardputer) {
+        return M5Cardputer.Keyboard.keysState().enter;
+    } else {
+        return M5.BtnA.wasPressed(); // StickS3 确认键
+    }
 }
 
 void GameInput::update() {

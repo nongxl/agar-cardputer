@@ -2,6 +2,7 @@
 #define INPUT_H
 
 #include <M5Cardputer.h>
+#include <M5Unified.h>
 #include <vector>
 
 class GameInput {

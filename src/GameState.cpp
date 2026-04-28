@@ -18,6 +18,7 @@ GameState::GameState() : local_player_id(0), current_seed(0), current_tick(0), l
     memset(pellets, 0, sizeof(pellets));
     memset(current_dx, 0, sizeof(current_dx));
     memset(current_dy, 0, sizeof(current_dy));
+    vibration_requested_ms = 0; // [V68]
 }
 
 uint16_t GameState::getRGBfromHue(uint16_t hue) {
@@ -284,6 +285,11 @@ uint8_t GameState::tick(bool is_master) {
                 players[i].score = (uint16_t)((float)players[i].score * 0.99f); 
                 updateRadiusFromScore(i);
             }
+
+            // [V68] 复活倒计时震动
+            if (i == local_player_id && players[i].respawn_tick > 0) {
+                if (players[i].respawn_tick % 20 == 0) requestVibration(20); // 每秒轻震 (20Hz tick * 20 = 1s)
+            }
         } else if (is_master) {
             if (players[i].respawn_tick > 0) {
                 players[i].respawn_tick--;
@@ -310,6 +316,7 @@ uint8_t GameState::tick(bool is_master) {
                     realY[i] = (float)players[i].y;
                     players[i].active = true; 
                     players[i].respawn_tick = 40; // 重生 2 秒无敌
+                    if (i == local_player_id) requestVibration(150); // 重生结束重震
                 }
             }
         }
@@ -330,6 +337,7 @@ uint8_t GameState::tick(bool is_master) {
                         spawnPellets(players[j].x, players[j].y, (victim_mass * 3) / 10, players[j].color);
                         players[j].active = false;
                         players[j].respawn_tick = 200; 
+                        if (j == local_player_id) requestVibration(300); // 死亡震动
                     }
                 }
             }
@@ -395,6 +403,7 @@ uint8_t GameState::tick(bool is_master) {
             if (should_explode && hit) {
                 triggerVirusExplosion(i, players[i].x, players[i].y);
                 players[i].respawn_tick = 40; 
+                if (i == local_player_id) requestVibration(100); // 爆炸震动
                 // [V27] 震撼弹飞效果：85px，并立即执行坐标限幅，彻底根除溢出瞬移
                 float boomTarget = players[i].radius + v_total_r + 85.0f; 
                 int32_t targetX = viruses[v].x + (int32_t)((dx / dist) * boomTarget);
@@ -425,6 +434,7 @@ uint8_t GameState::tick(bool is_master) {
                 players[i].score += food[f].size;
                 updateRadiusFromScore(i); // [V59] 无论主从，本地先行反馈体型变化
                 food[f].active = false;
+                if (i == local_player_id) requestVibration(15); // 吃食物轻震
             }
         }
 
@@ -433,6 +443,7 @@ uint8_t GameState::tick(bool is_master) {
                 players[i].score += pellets[p].size;
                 updateRadiusFromScore(i); // [V59] 统一更新
                 pellets[p].active = false;
+                if (i == local_player_id) requestVibration(15); // 吃碎肉轻震
             }
         }
     } // [V27 FIX] 关闭 player 循环
