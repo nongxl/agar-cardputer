@@ -1,8 +1,12 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+#ifndef TARGET_STOPWATCH
 #include <M5Cardputer.h>
+#endif
+#include <M5Unified.h>
 #include <vector>
+#include "BoardConfig.h"
 
 class GameInput {
 public:
@@ -23,9 +27,25 @@ public:
     
     void setImuEnabled(bool enabled) { imu_enabled = enabled; }
 
+    // [V70] 触摸接口 (仅 StopWatch 有效，其他设备恒为 false/-1)
+    bool touchBegan() const { return touch_began; }     // 本帧刚按下
+    int  menuTouchIndex() const { return menu_touch_idx; } // 本帧点中的菜单项 (-1 无)
+    // [V71] 触点相对屏幕中心的偏移 (逻辑像素)，用于"点哪去哪"
+    bool touchActive() const { return touch_active; }
+    float touchOffsetX() const { return touch_ox; }
+    float touchOffsetY() const { return touch_oy; }
+
 private:
     int8_t dx, dy;
     bool imu_enabled;
+
+    bool touch_began;
+    bool touch_active;
+    float touch_ox, touch_oy;
+    int  menu_touch_idx;
+    bool double_tap;
+    uint32_t last_tap_ms;
+    float last_tap_x, last_tap_y;
 
     // 状态快照，用于模拟 wasPressed
     std::vector<char> _last_keys;

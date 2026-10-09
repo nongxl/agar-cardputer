@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <M5Unified.h>
 #include "GameState.h"
+#include "BoardConfig.h"
 
 class Render {
 public:

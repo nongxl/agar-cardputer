@@ -1,4 +1,6 @@
+#ifndef TARGET_STOPWATCH
 #include <M5Cardputer.h>
+#endif
 #include <M5Unified.h>
 #include <WiFi.h>
 #include "src/GameState.h"
@@ -6,12 +8,14 @@
 #include "src/espnow_comm.h"
 #include "src/Sync.h"
 #include "src/Input.h"
+#include "src/Haptics.h"
 
 GameState* g_game = nullptr;
 Render* g_renderer = nullptr;
 EspNowComm* g_comm = nullptr;
 SyncManager* g_sync_mgr = nullptr;
-GameInput* g_input = nullptr; // [V56] 输入控制器实例化
+GameInput* g_input = nullptr; 
+HapticManager* g_haptics = nullptr; // [V68]
 
 bool g_is_master = false;
 bool g_game_started = false;
@@ -101,10 +105,26 @@ void onMessageReceived(const uint8_t* mac_addr, const uint8_t* data, int len) {
 }
 
 void setup() {
+    Serial.begin(115200);
     auto cfg = M5.config();
+#ifdef TARGET_STOPWATCH
+    // [V70] StopWatch：圆形 AMOLED，仅使用 M5Unified；不设置旋转
     M5.begin(cfg);
-    M5Cardputer.begin(cfg, true);
+    M5.Display.setBrightness(SCREEN_BRIGHTNESS); // [V75] AMOLED 屏幕亮度降低20% (160)
+    M5.Display.fillScreen(TFT_BLACK);
+    Serial.printf("[Agar-Watch] Booting %s. Board:%d, Display:%dx%d, Free PSRAM: %u, Free Heap: %u\n",
+                  GAME_VERSION_STR, (int)M5.getBoard(), M5.Display.width(), M5.Display.height(),
+                  ESP.getFreePsram(), ESP.getFreeHeap());
+#else
+    // [V67] 适配多种硬件初始化：如果是 Cardputer 则调用其专用 begin，否则仅使用 M5Unified
+    if (M5.getBoard() == m5::board_t::board_M5Cardputer) {
+        M5Cardputer.begin(cfg, true);
+    } else {
+        M5.begin(cfg);
+    }
+
     M5.Display.setRotation(1);
+#endif
     
     // [V56] 启动硬件 IMU
     M5.Imu.init();
@@ -112,9 +132,12 @@ void setup() {
     g_game = new GameState();
     g_renderer = new Render();
     g_renderer->init(&M5.Display);
+    Serial.println("[Agar-Watch] Renderer initialized successfully.");
     g_comm = new EspNowComm();
     g_sync_mgr = new SyncManager();
-    g_input = new GameInput(); // [V56]
+    g_input = new GameInput(); 
+    g_haptics = new HapticManager(); // [V68]
+    g_haptics->init();
     
     memset(g_slave_macs, 0, sizeof(g_slave_macs));
     g_game->setDemoMode(true);
@@ -122,8 +145,13 @@ void setup() {
 }
 
 void loop() {
-    M5Cardputer.update();
+    M5.update(); // [V67] 统一使用 M5.update()
     g_input->update(); // [V56] 关键：每帧采集硬件状态
+    g_haptics->update(); // [V68] 处理震动停止
+    
+    // 处理游戏逻辑产生的震动请求
+    uint16_t vibr_ms = g_game->getVibrationRequest();
+    if (vibr_ms > 0) g_haptics->vibrate(vibr_ms);
     
     unsigned long now = millis();
     static uint32_t lastTickTime = 0;
@@ -176,26 +204,78 @@ void loop() {
                 WiFi.macAddress(req.mac);
                 g_comm->broadcast((uint8_t*)&req, sizeof(req));
             }
-            if (g_input->keyPressed(0x08) || g_input->keyPressed(0x7F)) {
+            if (g_input->keyPressed(0x08) || g_input->keyPressed(0x7F) || g_input->touchBegan()) { // [V70] 触摸屏点击取消
+                g_haptics->vibrate(40);
                 g_waiting_for_sync = false;
                 g_game->init(0, "Demo", 0);
                 delay(200);
             }
             g_renderer->drawConnectingOverlay(true);
         } else if (g_item_flash_timer == 0) { 
-            if (g_input->keyPressed(';')) {
+            if (g_input->menuTouchIndex() >= 0) { // [V70] 触摸点击菜单项：选中并确认
+                if (g_confirm_flash_timer == 0) {
+                    g_selected_menu_idx = (uint8_t)g_input->menuTouchIndex();
+                    g_item_flash_timer = millis() + 400;
+                    g_haptics->vibrate(100);
+                }
+            } else if (g_input->keyPressed(';')) {
                 if (g_selected_menu_idx > 0) g_selected_menu_idx--;
+                else g_selected_menu_idx = 1; // [V69] 循环切换
+                g_haptics->vibrate(40);
                 delay(150); 
             } else if (g_input->keyPressed('.')) {
                 if (g_selected_menu_idx < 1) g_selected_menu_idx++;
+                else g_selected_menu_idx = 0; // [V69] 循环切换
+                g_haptics->vibrate(40);
                 delay(150);
             } else if (g_input->isEnterPressed()) { 
                 if (g_confirm_flash_timer == 0 && g_item_flash_timer == 0) {
                     g_item_flash_timer = millis() + 400; 
+                    g_haptics->vibrate(100); // 确认震动
                 }
             }
         }
     } else {
+        // [V72] 游戏中触摸轻震与点哪去哪导航
+#ifdef TARGET_STOPWATCH
+        static bool s_has_nav_target = false;
+        static float s_nav_target_x = 0;
+        static float s_nav_target_y = 0;
+
+        Player* localP = g_game->getLocalPlayer();
+        if (!localP || !localP->active || localP->respawn_tick > 0 || g_game->isGameOver()) {
+            s_has_nav_target = false;
+        }
+
+        static uint32_t last_touch_vibr_ms = 0;
+        if (g_input->touchBegan() && (now - last_touch_vibr_ms) >= 80) {
+            g_haptics->vibrate(40); // [V72] 40ms 配合 level 210，轻触反馈干脆有力
+            last_touch_vibr_ms = now;
+        }
+
+        // [V72] 点击屏幕一个位置，小球往该点移动；中途点击另一个点立即转向新目的地
+        if (g_input->touchActive() && localP && localP->active && localP->respawn_tick == 0 && !g_game->isGameOver()) {
+            float curX = g_game->getRealX(g_game->getLocalId());
+            float curY = g_game->getRealY(g_game->getLocalId());
+            float effectiveScale = g_view_scale * VIEW_SCALE_FACTOR;
+            s_nav_target_x = curX + (g_input->touchOffsetX() / effectiveScale);
+            s_nav_target_y = curY + (g_input->touchOffsetY() / effectiveScale);
+
+            if (s_nav_target_x < 0) s_nav_target_x = 0;
+            if (s_nav_target_x > MAP_WIDTH) s_nav_target_x = MAP_WIDTH;
+            if (s_nav_target_y < 0) s_nav_target_y = 0;
+            if (s_nav_target_y > MAP_HEIGHT) s_nav_target_y = MAP_HEIGHT;
+
+            s_has_nav_target = true;
+        }
+#else
+        // [V70] 其他设备
+        static uint32_t last_touch_vibr_ms = 0;
+        if (g_input->touchBegan() && (now - last_touch_vibr_ms) >= 80) {
+            g_haptics->vibrate(40);
+            last_touch_vibr_ms = now;
+        }
+#endif
         // [V56] 切换显隐开关
         if (g_input->isLeaderboardPressed()) {
             g_show_leaderboard = !g_show_leaderboard;
@@ -213,8 +293,28 @@ void loop() {
 
         // [V54] 核心游戏循环 (联机同步控制)
         if (now - lastTickTime >= TICK_INTERVAL) {
+#ifdef TARGET_STOPWATCH
+            int8_t move_dx = 0;
+            int8_t move_dy = 0;
+            if (s_has_nav_target && localP && localP->active && localP->respawn_tick == 0 && !g_game->isGameOver()) {
+                float curX = g_game->getRealX(g_game->getLocalId());
+                float curY = g_game->getRealY(g_game->getLocalId());
+                float vX = s_nav_target_x - curX;
+                float vY = s_nav_target_y - curY;
+                float dist = hypotf(vX, vY);
+                float stop_dist = max(10.0f, (float)localP->radius * 0.4f);
+                if (dist <= stop_dist) {
+                    s_has_nav_target = false; // 到达目的地，停止移动
+                } else {
+                    move_dx = (int8_t)lroundf((vX / dist) * 100.0f);
+                    move_dy = (int8_t)lroundf((vY / dist) * 100.0f);
+                }
+            }
+            g_game->updateLocalInput(move_dx, move_dy);
+#else
             // [V56] 注入同步后的物理位移
             g_game->updateLocalInput(g_input->getDx(), g_input->getDy());
+#endif
             g_game->tick(g_is_master); 
             lastTickTime = now;
             
@@ -240,4 +340,13 @@ void loop() {
         g_renderer->draw(*g_game, g_show_leaderboard, alpha, g_view_scale);
     }
     g_renderer->commit();
+
+    // 周期性串口心跳日志（每 1.5 秒输出一次，方便串口监控）
+    static uint32_t last_heartbeat = 0;
+    if (now - last_heartbeat >= 1500) {
+        last_heartbeat = now;
+        Serial.printf("[Agar-Watch Heartbeat] %s | FreeHeap: %u | FreePSRAM: %u\n",
+                      g_game_started ? "IN_GAME" : "MENU",
+                      ESP.getFreeHeap(), ESP.getFreePsram());
+    }
 }

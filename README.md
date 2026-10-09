@@ -9,7 +9,8 @@
 ## 中文版
 
 ### 简介
-**Agar-Cardputer** 是一款专为 M5Cardputer 硬件深度定制的多人联机竞技游戏。基于原生 **ESP-NOW** 技术实现免路由低延迟通讯，让您与家人朋友即刻开启多设备同屏吞噬大战。
+**Agar-Cardputer** 是一款专为 M5Cardputer 定制的多人联机竞技游戏。基于原生 **ESP-NOW** 技术实现免路由低延迟通讯，让您与家人朋友即刻开启多设备同屏吞噬大战。
+目前已支持m5 cardputer\cardputer adv\sticks3\stopwatch。
 
 ### 🚀 核心特色
 - **零配置联机**：利用 ESP-NOW 黑科技，两台设备开机即可自动组网，无需 WiFi 路由器。
@@ -22,7 +23,8 @@
 | :--- | :--- |
 | **IMU/方向键** | 控制球体移动 |
 | **ESC** | 切换排行榜显示/隐藏 |
-| **`-` / `+`** | 调节视野缩放 (0.1x - 1.3x) |
+| **`-` / `+` (Cardputer)** | 调节视野缩放 (0.1x - 1.3x) |
+| **BtnA / BtnB (StickS3)** | 放大 / 缩小 视野 |
 
 ### 🛠 技术规格
 - **刷新率**：上行 20Hz (输入) / 下行 12.5Hz (状态广播，预测补全至 20Hz)。
@@ -35,6 +37,7 @@
 
 ### Introduction
 **Agar-Cardputer** is a high-performance local multiplayer competitive game tailored exclusively for the M5Cardputer hardware. Powered by native **ESP-NOW**, it enables instant, router-free, low-latency cross-device predation battles with your friends and family.
+Now support：m5 cardputer\cardputer adv\sticks3\stopwatch。
 
 ### 🚀 Key Features
 - **Zero-Config Multiplayer**: Instant P2P networking via ESP-NOW. No WiFi router required.
@@ -47,7 +50,8 @@
 | :--- | :--- |
 | **IMU / Arrows** | Move the cell |
 | **ESC** | Toggle Leaderboard visibility |
-| **`-` / `+`** | Adjust View Zoom (0.1x - 1.3x) |
+| **`-` / `+` (Cardputer)** | Adjust View Zoom (0.1x - 1.3x) |
+| **BtnA / BtnB (StickS3)** | Zoom In / Zoom Out |
 
 ### 🛠 Technical Specifications
 - **Sync Rate**: 20Hz Upstream (Input) / 12.5Hz Downstream (State Broadcast, predicted to 20Hz).
