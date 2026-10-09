@@ -9,7 +9,8 @@
 ## 中文版
 
 ### 简介
-**Agar-Cardputer** 是一款专为 M5Cardputer 硬件深度定制的多人联机竞技游戏。基于原生 **ESP-NOW** 技术实现免路由低延迟通讯，让您与家人朋友即刻开启多设备同屏吞噬大战。
+**Agar-Cardputer** 是一款专为 M5Cardputer 定制的多人联机竞技游戏。基于原生 **ESP-NOW** 技术实现免路由低延迟通讯，让您与家人朋友即刻开启多设备同屏吞噬大战。
+目前已支持m5 cardputer\cardputer adv\sticks3\stopwatch。
 
 ### 🚀 核心特色
 - **零配置联机**：利用 ESP-NOW 黑科技，两台设备开机即可自动组网，无需 WiFi 路由器。
@@ -36,6 +37,7 @@
 
 ### Introduction
 **Agar-Cardputer** is a high-performance local multiplayer competitive game tailored exclusively for the M5Cardputer hardware. Powered by native **ESP-NOW**, it enables instant, router-free, low-latency cross-device predation battles with your friends and family.
+Now support：m5 cardputer\cardputer adv\sticks3\stopwatch。
 
 ### 🚀 Key Features
 - **Zero-Config Multiplayer**: Instant P2P networking via ESP-NOW. No WiFi router required.
