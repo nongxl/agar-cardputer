@@ -2,7 +2,8 @@
 #include <Arduino.h>
 
 GameInput::GameInput() : dx(0), dy(0), imu_enabled(true),
-    touch_began(false), menu_touch_idx(-1), double_tap(false),
+    touch_began(false), touch_active(false), touch_ox(0), touch_oy(0),
+    menu_touch_idx(-1), double_tap(false),
     last_tap_ms(0), last_tap_x(0), last_tap_y(0) {
 #ifdef TARGET_STOPWATCH
     imu_enabled = false; // [V70] StopWatch 默认关闭倾斜控制，避免与触摸冲突
@@ -18,8 +19,9 @@ bool GameInput::keyPressed(char k) {
     }
 #endif
     // StickS3 / StopWatch 映射逻辑 (两个物理按键)
-    if ((k == '=' || k == '+') && M5.BtnA.isPressed()) return true;
-    if ((k == '-' || k == '_') && M5.BtnB.isPressed()) return true;
+    // [V72] 调换缩放逻辑：BtnA 对应 '-' 缩小，BtnB 对应 '=' 放大
+    if ((k == '=' || k == '+') && M5.BtnB.isPressed()) return true;
+    if ((k == '-' || k == '_') && M5.BtnA.isPressed()) return true;
     
     // [V67] 菜单切换适配：BtnB 仅映射为 '.' (Next) 键，配合 main.cpp 的循环逻辑
     if (k == '.' && M5.BtnB.wasPressed()) return true;
@@ -82,6 +84,7 @@ void GameInput::update() {
     dx = 0;
     dy = 0;
     touch_began = false;
+    touch_active = false;
     menu_touch_idx = -1;
     double_tap = false;
 
@@ -115,9 +118,13 @@ void GameInput::update() {
     }
 
     if (t.isPressed()) {
+        touch_active = true;
+        touch_ox = tx - SCREEN_CX;
+        touch_oy = ty - SCREEN_CY;
+
         // 以屏幕中心 (角色位置) 为参考，取触点方向；死区内不移动
-        float vx = tx - SCREEN_CX;
-        float vy = ty - SCREEN_CY;
+        float vx = touch_ox;
+        float vy = touch_oy;
         float dist = sqrtf(vx * vx + vy * vy);
         if (dist > TOUCH_DEADZONE) {
             dx = (int8_t)lroundf(vx / dist * 100.0f);

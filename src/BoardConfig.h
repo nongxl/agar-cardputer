@@ -6,7 +6,7 @@
 //   采用 233x233 逻辑画布，推送时 2x 放大到物理屏幕 (方案 A)。
 //   逻辑画布宽度与 Cardputer (240) 接近，因此世界可视范围基本一致，保持竞技公平。
 
-#define GAME_VERSION_STR "v1.3"
+#define GAME_VERSION_STR "v1.4"
 
 #ifdef TARGET_STOPWATCH
     #define SCREEN_W 233

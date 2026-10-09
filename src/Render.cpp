@@ -275,8 +275,8 @@ void Render::drawLeaderboard(GameState& state) {
 void Render::drawMinimap(GameState& state, float view_scale, float camX, float camY) {
     int mapSize = 40;
 #ifdef BOARD_ROUND_SCREEN
-    int startX = (int)SCREEN_CX - mapSize / 2; // 圆屏：底部居中
-    int startY = SCREEN_H - mapSize - 14;
+    int startX = 10;                            // 圆屏：左侧安全区 (X: 10~50)
+    int startY = (int)SCREEN_CY - mapSize / 2;  // 垂直居中 (Y: 96~136)
 #else
     int startX = SCREEN_W - mapSize - 5; 
     int startY = SCREEN_H - mapSize - 5;

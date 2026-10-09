@@ -30,12 +30,18 @@ public:
     // [V70] 触摸接口 (仅 StopWatch 有效，其他设备恒为 false/-1)
     bool touchBegan() const { return touch_began; }     // 本帧刚按下
     int  menuTouchIndex() const { return menu_touch_idx; } // 本帧点中的菜单项 (-1 无)
+    // [V71] 触点相对屏幕中心的偏移 (逻辑像素)，用于"点哪去哪"
+    bool touchActive() const { return touch_active; }
+    float touchOffsetX() const { return touch_ox; }
+    float touchOffsetY() const { return touch_oy; }
 
 private:
     int8_t dx, dy;
     bool imu_enabled;
 
     bool touch_began;
+    bool touch_active;
+    float touch_ox, touch_oy;
     int  menu_touch_idx;
     bool double_tap;
     uint32_t last_tap_ms;

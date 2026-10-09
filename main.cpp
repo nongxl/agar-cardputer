@@ -199,6 +199,7 @@ void loop() {
                 g_comm->broadcast((uint8_t*)&req, sizeof(req));
             }
             if (g_input->keyPressed(0x08) || g_input->keyPressed(0x7F) || g_input->touchBegan()) { // [V70] 触摸屏点击取消
+                g_haptics->vibrate(40);
                 g_waiting_for_sync = false;
                 g_game->init(0, "Demo", 0);
                 delay(200);
@@ -229,12 +230,45 @@ void loop() {
             }
         }
     } else {
-        // [V70] 游戏中触摸轻震 (仅按下瞬间触发，最小间隔 80ms，拖动不重复)
+        // [V72] 游戏中触摸轻震与点哪去哪导航
+#ifdef TARGET_STOPWATCH
+        static bool s_has_nav_target = false;
+        static float s_nav_target_x = 0;
+        static float s_nav_target_y = 0;
+
+        Player* localP = g_game->getLocalPlayer();
+        if (!localP || !localP->active || localP->respawn_tick > 0 || g_game->isGameOver()) {
+            s_has_nav_target = false;
+        }
+
         static uint32_t last_touch_vibr_ms = 0;
         if (g_input->touchBegan() && (now - last_touch_vibr_ms) >= 80) {
-            g_haptics->vibrate(15);
+            g_haptics->vibrate(40); // [V72] 40ms 配合 level 210，轻触反馈干脆有力
             last_touch_vibr_ms = now;
         }
+
+        // [V72] 点击屏幕一个位置，小球往该点移动；中途点击另一个点立即转向新目的地
+        if (g_input->touchActive() && localP && localP->active && localP->respawn_tick == 0 && !g_game->isGameOver()) {
+            float curX = g_game->getRealX(g_game->getLocalId());
+            float curY = g_game->getRealY(g_game->getLocalId());
+            s_nav_target_x = curX + (g_input->touchOffsetX() / g_view_scale);
+            s_nav_target_y = curY + (g_input->touchOffsetY() / g_view_scale);
+
+            if (s_nav_target_x < 0) s_nav_target_x = 0;
+            if (s_nav_target_x > MAP_WIDTH) s_nav_target_x = MAP_WIDTH;
+            if (s_nav_target_y < 0) s_nav_target_y = 0;
+            if (s_nav_target_y > MAP_HEIGHT) s_nav_target_y = MAP_HEIGHT;
+
+            s_has_nav_target = true;
+        }
+#else
+        // [V70] 其他设备
+        static uint32_t last_touch_vibr_ms = 0;
+        if (g_input->touchBegan() && (now - last_touch_vibr_ms) >= 80) {
+            g_haptics->vibrate(40);
+            last_touch_vibr_ms = now;
+        }
+#endif
         // [V56] 切换显隐开关
         if (g_input->isLeaderboardPressed()) {
             g_show_leaderboard = !g_show_leaderboard;
@@ -252,8 +286,28 @@ void loop() {
 
         // [V54] 核心游戏循环 (联机同步控制)
         if (now - lastTickTime >= TICK_INTERVAL) {
+#ifdef TARGET_STOPWATCH
+            int8_t move_dx = 0;
+            int8_t move_dy = 0;
+            if (s_has_nav_target && localP && localP->active && localP->respawn_tick == 0 && !g_game->isGameOver()) {
+                float curX = g_game->getRealX(g_game->getLocalId());
+                float curY = g_game->getRealY(g_game->getLocalId());
+                float vX = s_nav_target_x - curX;
+                float vY = s_nav_target_y - curY;
+                float dist = hypotf(vX, vY);
+                float stop_dist = max(10.0f, (float)localP->radius * 0.4f);
+                if (dist <= stop_dist) {
+                    s_has_nav_target = false; // 到达目的地，停止移动
+                } else {
+                    move_dx = (int8_t)lroundf((vX / dist) * 100.0f);
+                    move_dy = (int8_t)lroundf((vY / dist) * 100.0f);
+                }
+            }
+            g_game->updateLocalInput(move_dx, move_dy);
+#else
             // [V56] 注入同步后的物理位移
             g_game->updateLocalInput(g_input->getDx(), g_input->getDy());
+#endif
             g_game->tick(g_is_master); 
             lastTickTime = now;
             

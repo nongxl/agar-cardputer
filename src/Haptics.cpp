@@ -32,13 +32,13 @@ void HapticManager::vibrate(uint16_t duration_ms) {
     if (duration_ms == 0) return;
 
     if (_use_power_motor) {
-        // 按时长分级强度：轻触/吃食物 (<=20ms) 弱；撞刺球 (~100ms) 强；死亡 (>=300ms) 最强
+        // [V72] 调整震动强度分级：短脉冲给足起振占空比，确保轻触反馈清晰有力
         uint8_t level;
-        if (duration_ms <= 20)       level = 70;
-        else if (duration_ms <= 50)  level = 110;
-        else if (duration_ms < 100)  level = 150;
-        else if (duration_ms < 150)  level = 230;  // 撞刺球
-        else if (duration_ms < 300)  level = 200;  // 复活提醒
+        if (duration_ms <= 30)       level = 190;
+        else if (duration_ms <= 60)  level = 210;
+        else if (duration_ms < 100)  level = 220;
+        else if (duration_ms < 150)  level = 240;  // 撞刺球
+        else if (duration_ms < 300)  level = 220;  // 复活提醒
         else                         level = 255;  // 死亡
         M5.Power.setVibration(level);
         _stop_ms = millis() + duration_ms;
