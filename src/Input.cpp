@@ -89,11 +89,10 @@ void GameInput::update() {
     double_tap = false;
 
 #ifdef TARGET_STOPWATCH
-    // [V70] 触摸输入：物理坐标 (466x466) 换算为逻辑坐标 (233x233)
+    // [V73] 触摸输入：物理坐标直接对齐 466x466 原生画布
     auto t = M5.Touch.getDetail();
-    const float k = (float)SCREEN_W / (float)M5.Display.width();
-    float tx = t.x * k;
-    float ty = t.y * k;
+    float tx = t.x;
+    float ty = t.y;
 
     if (t.wasPressed()) {
         touch_began = true;
@@ -102,8 +101,8 @@ void GameInput::update() {
         // 菜单项命中检测
         const float half_w = MENU_OPT_W / 2.0f;
         if (fabsf(tx - SCREEN_CX) <= half_w) {
-            if (fabsf(ty - MENU_OPT1_Y) <= 18) menu_touch_idx = 0;
-            else if (fabsf(ty - MENU_OPT2_Y) <= 18) menu_touch_idx = 1;
+            if (fabsf(ty - MENU_OPT1_Y) <= 30) menu_touch_idx = 0;
+            else if (fabsf(ty - MENU_OPT2_Y) <= 30) menu_touch_idx = 1;
         }
 
         // 双击屏幕中心检测

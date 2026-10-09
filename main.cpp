@@ -251,8 +251,9 @@ void loop() {
         if (g_input->touchActive() && localP && localP->active && localP->respawn_tick == 0 && !g_game->isGameOver()) {
             float curX = g_game->getRealX(g_game->getLocalId());
             float curY = g_game->getRealY(g_game->getLocalId());
-            s_nav_target_x = curX + (g_input->touchOffsetX() / g_view_scale);
-            s_nav_target_y = curY + (g_input->touchOffsetY() / g_view_scale);
+            float effectiveScale = g_view_scale * VIEW_SCALE_FACTOR;
+            s_nav_target_x = curX + (g_input->touchOffsetX() / effectiveScale);
+            s_nav_target_y = curY + (g_input->touchOffsetY() / effectiveScale);
 
             if (s_nav_target_x < 0) s_nav_target_x = 0;
             if (s_nav_target_x > MAP_WIDTH) s_nav_target_x = MAP_WIDTH;
