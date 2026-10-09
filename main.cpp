@@ -105,11 +105,16 @@ void onMessageReceived(const uint8_t* mac_addr, const uint8_t* data, int len) {
 }
 
 void setup() {
+    Serial.begin(115200);
     auto cfg = M5.config();
 #ifdef TARGET_STOPWATCH
     // [V70] StopWatch：圆形 AMOLED，仅使用 M5Unified；不设置旋转
     M5.begin(cfg);
+    M5.Display.setBrightness(SCREEN_BRIGHTNESS); // [V75] AMOLED 屏幕亮度降低20% (160)
     M5.Display.fillScreen(TFT_BLACK);
+    Serial.printf("[Agar-Watch] Booting %s. Board:%d, Display:%dx%d, Free PSRAM: %u, Free Heap: %u\n",
+                  GAME_VERSION_STR, (int)M5.getBoard(), M5.Display.width(), M5.Display.height(),
+                  ESP.getFreePsram(), ESP.getFreeHeap());
 #else
     // [V67] 适配多种硬件初始化：如果是 Cardputer 则调用其专用 begin，否则仅使用 M5Unified
     if (M5.getBoard() == m5::board_t::board_M5Cardputer) {
@@ -127,6 +132,7 @@ void setup() {
     g_game = new GameState();
     g_renderer = new Render();
     g_renderer->init(&M5.Display);
+    Serial.println("[Agar-Watch] Renderer initialized successfully.");
     g_comm = new EspNowComm();
     g_sync_mgr = new SyncManager();
     g_input = new GameInput(); 
@@ -334,4 +340,13 @@ void loop() {
         g_renderer->draw(*g_game, g_show_leaderboard, alpha, g_view_scale);
     }
     g_renderer->commit();
+
+    // 周期性串口心跳日志（每 1.5 秒输出一次，方便串口监控）
+    static uint32_t last_heartbeat = 0;
+    if (now - last_heartbeat >= 1500) {
+        last_heartbeat = now;
+        Serial.printf("[Agar-Watch Heartbeat] %s | FreeHeap: %u | FreePSRAM: %u\n",
+                      g_game_started ? "IN_GAME" : "MENU",
+                      ESP.getFreeHeap(), ESP.getFreePsram());
+    }
 }

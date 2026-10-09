@@ -7,11 +7,19 @@ Render::Render() : _display(nullptr), smoothCamX(0), smoothCamY(0) {
 void Render::init(M5GFX* display) {
     _display = display;
     _canvas.setColorDepth(16);
-    _canvas.createSprite(SCREEN_W, SCREEN_H);
+#if defined(TARGET_STOPWATCH) && defined(BOARD_HAS_PSRAM)
+    _canvas.setPsram(true); // [V74] 关键：大尺寸画布启用 8MB PSRAM 内存池分配
+#endif
+    void* ptr = _canvas.createSprite(SCREEN_W, SCREEN_H);
+    if (!ptr) {
+        // [V74] 保底防御：若 PSRAM 异常，降级至 233x233 片内 SRAM，确保绝不空指针崩溃
+        _canvas.setPsram(false);
+        _canvas.createSprite(233, 233);
+    }
 }
 
 void Render::draw(GameState& state, bool show_leaderboard, float alpha, float VIEW_SCALE) {
-    if (!_display) return;
+    if (!_display || !_canvas.getBuffer()) return;
 
     _canvas.fillScreen(0xF7DF); 
     uint8_t local_id = state.getLocalId();
@@ -217,9 +225,16 @@ void Render::drawConnectingOverlay(bool is_searching) {
 }
 
 void Render::commit() {
-    if (!_display) return;
-    // [V73] 无论何种屏幕，均直接由硬件 DMA 刷屏。圆屏硬件自身裁切四角，视野自然铺满整圆且无黑边
-    _canvas.pushSprite(_display, 0, 0);
+    if (!_display || !_canvas.getBuffer()) return;
+    if (_canvas.width() >= _display->width() && _canvas.height() >= _display->height()) {
+        _canvas.pushSprite(_display, 0, 0);
+    } else {
+        // [V74] 自适应降级模式：显式居中放大充满圆形屏幕，不绘制任何黑边
+        _canvas.setPivot(_canvas.width() / 2.0f, _canvas.height() / 2.0f);
+        float zoomX = (float)_display->width() / (float)_canvas.width();
+        float zoomY = (float)_display->height() / (float)_canvas.height();
+        _canvas.pushRotateZoom(_display, _display->width() / 2.0f, _display->height() / 2.0f, 0.0f, zoomX, zoomY);
+    }
 }
 
 void Render::drawLeaderboard(GameState& state) {

@@ -6,7 +6,7 @@
 //   采用 466x466 原生高刷画布，直接走硬件 DMA pushSprite，画质清晰细腻且帧率极高；
 //   通过 VIEW_SCALE_FACTOR 自动等比缩放世界坐标，保持多设备竞技视野完全一致。
 
-#define GAME_VERSION_STR "v1.5"
+#define GAME_VERSION_STR "v1.8"
 
 #ifdef TARGET_STOPWATCH
     #define SCREEN_W 466
@@ -14,6 +14,7 @@
     #define BOARD_ROUND_SCREEN 1
     #define VIEW_SCALE_FACTOR (466.0f / 240.0f)
     #define UI_FONT_SCALE 2
+    #define SCREEN_BRIGHTNESS 160 // [V75] AMOLED 屏幕亮度（相比初始200降低20%）
 
     #define TITLE_STR "AGAR-WATCH"
     #define MENU_TITLE_Y 110
