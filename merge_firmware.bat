@@ -27,14 +27,14 @@ if not "%PARAM%"=="" goto handle_param
 
 :menu
 echo.
-echo 请选择需要打包的目标设备 (Please select target device):
+echo Please select target device:
 echo   [1] M5Stack StopWatch  (16MB Flash, 466x466 AMOLED)
 echo   [2] M5StickS3          (8MB Flash)
 echo   [3] M5Cardputer        (8MB Flash)
-echo   [4] 全部打包 (Build All)
-echo   [0] 退出 (Exit)
+echo   [4] Build All Devices
+echo   [0] Exit
 echo.
-set /p "CHOICE=请输入选项序号 [1-4] (默认 1): "
+set /p "CHOICE=Enter choice [1-4] (default 1): "
 if "%CHOICE%"=="" set "CHOICE=1"
 
 if "%CHOICE%"=="1" goto run_stopwatch
@@ -42,7 +42,7 @@ if "%CHOICE%"=="2" goto run_sticks3
 if "%CHOICE%"=="3" goto run_cardputer
 if "%CHOICE%"=="4" goto run_all
 if "%CHOICE%"=="0" goto end
-echo 无效选项，请重新输入。
+echo Invalid option, please try again.
 goto menu
 
 :handle_param
@@ -54,7 +54,7 @@ if "%PARAM%"=="1" goto run_stopwatch
 if "%PARAM%"=="2" goto run_sticks3
 if "%PARAM%"=="3" goto run_cardputer
 if "%PARAM%"=="4" goto run_all
-echo 未知参数: %PARAM%
+echo Unknown parameter: %PARAM%
 goto menu
 
 :run_stopwatch
@@ -78,7 +78,7 @@ goto finish
 :finish
 echo.
 echo ============================================================
-echo 所有选定任务处理完毕！
+echo               All tasks completed!
 echo ============================================================
 if "%~1"=="" pause
 goto end
@@ -91,13 +91,13 @@ set "DEV=%~4"
 
 echo.
 echo ------------------------------------------------------------
-echo 正在处理: %DEV% (%ENV%)
+echo Processing: %DEV% (%ENV%)
 echo ------------------------------------------------------------
 
 set "BUILD_DIR=.pio\build\%ENV%"
 if not exist "%BUILD_DIR%\firmware.bin" (
-    echo [提示] 未找到编译产物: %BUILD_DIR%\firmware.bin
-    echo 正在使用 platformio 编译 %ENV% ...
+    echo [INFO] firmware.bin not found in %BUILD_DIR%
+    echo Building %ENV% using PlatformIO...
     where pio >nul 2>nul
     if !errorlevel! equ 0 (
         pio run -e %ENV%
@@ -107,19 +107,19 @@ if not exist "%BUILD_DIR%\firmware.bin" (
 )
 
 if not exist "%BUILD_DIR%\firmware.bin" (
-    echo [错误] 编译未完成或未生成 firmware.bin: %ENV%
+    echo [ERROR] Build failed or firmware.bin still missing for %ENV%.
     exit /b 1
 )
 
-echo 执行 merge_bin 生成单文件固件...
+echo Merging firmware binaries to single factory image...
 %ESPTOOL_CMD% --chip esp32s3 merge_bin -o "%OUT%" --flash_mode dio --flash_size %FSIZE% 0x0000 "%BUILD_DIR%\bootloader.bin" 0x8000 "%BUILD_DIR%\partitions.bin" 0xe000 "%BOOT_APP0%" 0x10000 "%BUILD_DIR%\firmware.bin"
 
 if !errorlevel! equ 0 (
-    echo [成功] %DEV% 固件已合并至: %OUT%
-    for %%F in ("%OUT%") do echo        文件大小: %%~zF 字节
-    echo        烧录命令: esptool --chip esp32s3 write_flash 0x0 %OUT%
+    echo [SUCCESS] %DEV% firmware merged into: %OUT%
+    for %%F in ("%OUT%") do echo           File Size: %%~zF bytes
+    echo           Flash Command: esptool --chip esp32s3 write_flash 0x0 %OUT%
 ) else (
-    echo [失败] merge_bin 出错，错误码: !errorlevel!
+    echo [FAILED] merge_bin failed with error code !errorlevel!
 )
 exit /b 0
 
