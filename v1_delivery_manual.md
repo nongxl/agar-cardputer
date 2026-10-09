@@ -1,6 +1,6 @@
-# Agar-Cardputer 竞技版 V1.8 交付手册
+# Agar-Cardputer 竞技版 V1.9 交付手册
 
-本产品是基于 M5Cardputer 硬件深度定制的 Agar.io 风格多人竞技游戏方案。V1.8 版本针对 **M5 StopWatch** 的 AMOLED 屏幕视觉体验微调了背光亮度（从 200 降低 20% 至 160，降低刺眼感与功耗），同时维持 8MB PSRAM 高刷画布、无黑边全景渲染与轻触振动反馈。
+本产品是基于 M5Stack 系列硬件（Cardputer / StickS3 / StopWatch）深度定制的 Agar.io 风格多人跨设备竞技游戏方案。V1.9 版本完成了**多硬件平台单一代码库（Single Codebase）主干收敛**，一套主干源码同时驱动 M5Cardputer（键盘）、M5StickS3（双键/IMU/震动）以及 M5StopWatch（圆形 AMOLED 触屏/电源马达），三端均基于统一的物理模型与 ESP-NOW 局域网协议，支持任意设备间混编竞技对战。
 
 ## 1. 核心玩法规则
 

@@ -6,7 +6,7 @@
 //   采用 466x466 原生高刷画布，直接走硬件 DMA pushSprite，画质清晰细腻且帧率极高；
 //   通过 VIEW_SCALE_FACTOR 自动等比缩放世界坐标，保持多设备竞技视野完全一致。
 
-#define GAME_VERSION_STR "v1.8"
+#define GAME_VERSION_STR "v1.9"
 
 #ifdef TARGET_STOPWATCH
     #define SCREEN_W 466
