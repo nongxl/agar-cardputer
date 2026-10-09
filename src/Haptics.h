@@ -13,6 +13,7 @@ public:
 
 private:
     int _vibr_pin;
+    bool _use_power_motor; // [V70] StopWatch 内置马达 (通过 M5.Power.setVibration 控制强度)
     uint32_t _stop_ms;
     bool _is_vibrating;
 };

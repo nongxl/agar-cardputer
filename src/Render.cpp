@@ -1,12 +1,12 @@
 #include "Render.h"
-#include <M5Cardputer.h>
+#include <M5Unified.h>
 
 Render::Render() : _display(nullptr), smoothCamX(0), smoothCamY(0) {
 }
 
 void Render::init(M5GFX* display) {
     _display = display;
-    _canvas.createSprite(240, 135);
+    _canvas.createSprite(SCREEN_W, SCREEN_H);
 }
 
 void Render::draw(GameState& state, bool show_leaderboard, float alpha, float VIEW_SCALE) {
@@ -34,8 +34,8 @@ void Render::draw(GameState& state, bool show_leaderboard, float alpha, float VI
         smoothCamY = smoothCamY * 0.8f + targetY * 0.2f;
     }
 
-    float camX = smoothCamX - (120.0f / VIEW_SCALE);
-    float camY = smoothCamY - (67.5f / VIEW_SCALE);
+    float camX = smoothCamX - (SCREEN_CX / VIEW_SCALE);
+    float camY = smoothCamY - (SCREEN_CY / VIEW_SCALE);
 
     int mapLeft = (int)((0.0f - camX) * VIEW_SCALE);
     int mapTopSize = (int)((0.0f - camY) * VIEW_SCALE);
@@ -48,10 +48,10 @@ void Render::draw(GameState& state, bool show_leaderboard, float alpha, float VI
     // 1. 绘制网格
     _canvas.setClipRect(mapLeft, mapTopSize, mapWidth, mapHeight);
     float gridStep = 50.0f * VIEW_SCALE;
-    for (float x = fmod(-camX * VIEW_SCALE, gridStep); x < 240.0f; x += gridStep)
-        _canvas.drawFastVLine((int)x, 0, 135, 0xCE59);
-    for (float y = fmod(-camY * VIEW_SCALE, gridStep); y < 135.0f; y += gridStep)
-        _canvas.drawFastHLine(0, (int)y, 240, 0xCE59);
+    for (float x = fmod(-camX * VIEW_SCALE, gridStep); x < (float)SCREEN_W; x += gridStep)
+        _canvas.drawFastVLine((int)x, 0, SCREEN_H, 0xCE59);
+    for (float y = fmod(-camY * VIEW_SCALE, gridStep); y < (float)SCREEN_H; y += gridStep)
+        _canvas.drawFastHLine(0, (int)y, SCREEN_W, 0xCE59);
     _canvas.clearClipRect();
 
     // 2. 绘制食物
@@ -60,7 +60,7 @@ void Render::draw(GameState& state, bool show_leaderboard, float alpha, float VI
         if (food[i].active) {
             int relX = (int)(((float)food[i].x - camX) * VIEW_SCALE);
             int relY = (int)(((float)food[i].y - camY) * VIEW_SCALE);
-            if (relX > -15 && relX < 255 && relY > -15 && relY < 150) {
+            if (relX > -15 && relX < SCREEN_W + 15 && relY > -15 && relY < SCREEN_H + 15) {
                 _canvas.fillCircle(relX, relY, (int)((food[i].size + 1) * VIEW_SCALE + 1), GameState::getRGBfromHue(food[i].color));
             }
         }
@@ -72,7 +72,7 @@ void Render::draw(GameState& state, bool show_leaderboard, float alpha, float VI
         if (pellets[i].active) {
             int relX = (int)(((float)pellets[i].x - camX) * VIEW_SCALE);
             int relY = (int)(((float)pellets[i].y - camY) * VIEW_SCALE);
-            if (relX > -15 && relX < 255 && relY > -15 && relY < 150) {
+            if (relX > -15 && relX < SCREEN_W + 15 && relY > -15 && relY < SCREEN_H + 15) {
                 _canvas.fillCircle(relX, relY, (int)((float)pellets[i].size * VIEW_SCALE), GameState::getRGBfromHue(pellets[i].color));
             }
         }
@@ -90,7 +90,7 @@ void Render::draw(GameState& state, bool show_leaderboard, float alpha, float VI
             int relY = (viruses[v].y - camY) * VIEW_SCALE;
             float r = (float)viruses[v].radius * VIEW_SCALE;
             
-            if (relX > -100 && relX < 340 && relY > -100 && relY < 235) {
+            if (relX > -100 && relX < SCREEN_W + 100 && relY > -100 && relY < SCREEN_H + 100) {
                 uint16_t vColor = GameState::getRGBfromHue(viruses[v].color);
                 _canvas.fillCircle(relX, relY, r, vColor);
                 _canvas.drawCircle(relX, relY, r, TFT_BLACK);
@@ -132,7 +132,7 @@ void Render::draw(GameState& state, bool show_leaderboard, float alpha, float VI
             int relX = (int)((pX - camX) * VIEW_SCALE);
             int relY = (int)((pY - camY) * VIEW_SCALE);
             int radius = (int)((float)state.getRealRadius(i) * VIEW_SCALE);
-            if (relX > -150 && relX < 400 && relY > -150 && relY < 300) {
+            if (relX > -150 && relX < SCREEN_W + 160 && relY > -150 && relY < SCREEN_H + 165) {
                 uint16_t color = GameState::getRGBfromHue(players[i].color);
                 _canvas.fillCircle(relX, relY, radius, color);
                 _canvas.drawCircle(relX, relY, radius + 1, TFT_BLACK);
@@ -149,7 +149,7 @@ void Render::draw(GameState& state, bool show_leaderboard, float alpha, float VI
         _canvas.setTextSize(4);
         _canvas.setTextColor(((millis() / 250) % 2 == 0) ? TFT_RED : TFT_WHITE);
         _canvas.setTextDatum(middle_center);
-        _canvas.drawString(String((local->respawn_tick / 20) + 1), 120, 67);
+        _canvas.drawString(String((local->respawn_tick / 20) + 1), (int)SCREEN_CX, (int)SCREEN_CY);
         _canvas.setTextSize(1);
     }
 
@@ -157,12 +157,16 @@ void Render::draw(GameState& state, bool show_leaderboard, float alpha, float VI
     if (state.isGameOver()) {
         uint8_t winId = state.getWinnerId();
         Player* winner = &players[winId];
+#ifdef BOARD_ROUND_SCREEN
+        _canvas.setTextSize(2); // 圆屏宽度有限，缩小字号避免文字被裁切
+#else
         _canvas.setTextSize(4);
+#endif
         _canvas.setTextColor(GameState::getRGBfromHue(winner->color));
         _canvas.setTextDatum(middle_center);
         char winBuf[32];
         sprintf(winBuf, "%s WINS", winner->name);
-        _canvas.drawString(winBuf, 120, 67);
+        _canvas.drawString(winBuf, (int)SCREEN_CX, (int)SCREEN_CY);
         _canvas.setTextSize(1);
     }
 
@@ -183,7 +187,8 @@ void Render::drawConnectingOverlay(bool is_searching) {
     char dots[4] = {0};
     for(int i = 0; i < dotCount; i++) dots[i] = '.';
 
-    drawBrushHighlight(120 - 95, 67 - 22, 190, 44, 0xFFE0); // 居中黄色笔触底框
+    int cx = (int)SCREEN_CX, cy = (int)SCREEN_CY;
+    drawBrushHighlight(cx - 95, cy - 22, 190, 44, 0xFFE0); // 居中黄色笔触底框
     _canvas.setTextColor(TFT_BLACK);
     _canvas.setTextDatum(middle_center);
     _canvas.setTextSize(1);
@@ -195,24 +200,59 @@ void Render::drawConnectingOverlay(bool is_searching) {
         sprintf(msgBuf, "WAITING FOR SYNC DATA%s", dots);
     }
     
-    _canvas.drawString(msgBuf, 120, 67);
+#ifdef BOARD_ROUND_SCREEN
+    _canvas.drawString(msgBuf, cx, cy - 6);
+    _canvas.drawString("TAP TO CANCEL", cx, cy + 8);
+#else
+    _canvas.drawString(msgBuf, cx, cy);
+#endif
 }
 
 void Render::commit() {
     if (!_display) return;
+#ifdef BOARD_ROUND_SCREEN
+    // 圆屏：把圆外四角涂黑 (AMOLED 黑色不发光)，再以 2x 放大推送到 466x466 物理屏
+    const float R = SCREEN_W / 2.0f;
+    for (int y = 0; y < SCREEN_H; y++) {
+        float dy = (float)y + 0.5f - SCREEN_CY;
+        float hw2 = R * R - dy * dy;
+        int hw = hw2 > 0 ? (int)sqrtf(hw2) : 0;
+        int left = (int)SCREEN_CX - hw;
+        if (left > 0) _canvas.fillRect(0, y, left, 1, TFT_BLACK);
+        int rightStart = (int)SCREEN_CX + hw;
+        if (rightStart < SCREEN_W) _canvas.fillRect(rightStart, y, SCREEN_W - rightStart, 1, TFT_BLACK);
+    }
+    _canvas.pushRotateZoom(_display, _display->width() / 2.0f, _display->height() / 2.0f, 0.0f, PUSH_ZOOM, PUSH_ZOOM);
+#else
     _canvas.pushSprite(_display, 0, 0);
+#endif
 }
 
 void Render::drawLeaderboard(GameState& state) {
+#ifdef BOARD_ROUND_SCREEN
+    // 圆屏：排行榜置于顶部圆弧内居中
+    const int LB_X = (int)SCREEN_CX;
+    const int LB_Y0 = 16;
+    const int LB_ROW0 = 36;
+    _canvas.setTextDatum(top_center);
+#else
+    const int LB_X = 170;
+    const int LB_Y0 = 5;
+    const int LB_ROW0 = 26;
     _canvas.setTextDatum(top_left);
+#endif
     _canvas.setTextColor(TFT_BLACK);
     _canvas.setTextSize(1);
     char totalBuf[32];
     sprintf(totalBuf, "T_MASS:%u", state.getTotalWorldMass());
-    _canvas.drawString(totalBuf, 170, 5);
+    _canvas.drawString(totalBuf, LB_X, LB_Y0);
     _canvas.setTextColor(TFT_BLACK);
-    _canvas.drawString("== TOP ==", 170, 14);
+    _canvas.drawString("== TOP ==", LB_X, LB_Y0 + 9);
+#ifdef BOARD_ROUND_SCREEN
+    _canvas.drawLine(LB_X - 32, LB_Y0 + 18, LB_X + 32, LB_Y0 + 18, TFT_DARKGREY);
+#else
     _canvas.drawLine(170, 23, 235, 23, TFT_DARKGREY);
+#endif
     
     Player* players = state.getPlayers();
     int count = 0;
@@ -222,20 +262,25 @@ void Render::drawLeaderboard(GameState& state) {
             _canvas.setTextColor(color);
             char buf[32];
             sprintf(buf, "%s: %d", players[i].name, players[i].score);
-            _canvas.drawString(buf, 170, 26 + (count++) * 9);
+            _canvas.drawString(buf, LB_X, LB_ROW0 + (count++) * 9);
         } else if (players[i].respawn_tick > 0) {
             _canvas.setTextColor(((millis() / 300) % 2 == 0) ? TFT_RED : TFT_DARKGREY);
             char buf[32];
             sprintf(buf, "%s: %ds", players[i].name, (players[i].respawn_tick / 20) + 1);
-            _canvas.drawString(buf, 170, 26 + (count++) * 9);
+            _canvas.drawString(buf, LB_X, LB_ROW0 + (count++) * 9);
         }
     }
 }
 
 void Render::drawMinimap(GameState& state, float view_scale, float camX, float camY) {
     int mapSize = 40;
-    int startX = 240 - mapSize - 5; 
-    int startY = 135 - mapSize - 5;
+#ifdef BOARD_ROUND_SCREEN
+    int startX = (int)SCREEN_CX - mapSize / 2; // 圆屏：底部居中
+    int startY = SCREEN_H - mapSize - 14;
+#else
+    int startX = SCREEN_W - mapSize - 5; 
+    int startY = SCREEN_H - mapSize - 5;
+#endif
     const float MINI_SCALE = (float)mapSize / (float)MAP_WIDTH;
     
     _canvas.drawRect(startX - 1, startY - 1, mapSize + 2, mapSize + 2, 0x8410);
@@ -244,8 +289,8 @@ void Render::drawMinimap(GameState& state, float view_scale, float camX, float c
     // [V30.2] 使用浮点比例与 round() 修正视野框偏移
     int vwX = startX + (int)roundf(camX * MINI_SCALE);
     int vwY = startY + (int)roundf(camY * MINI_SCALE);
-    int vwW = (int)roundf((240.0f / view_scale) * MINI_SCALE);
-    int vwH = (int)roundf((135.0f / view_scale) * MINI_SCALE);
+    int vwW = (int)roundf(((float)SCREEN_W / view_scale) * MINI_SCALE);
+    int vwH = (int)roundf(((float)SCREEN_H / view_scale) * MINI_SCALE);
     _canvas.drawRect(vwX, vwY, vwW, vwH, TFT_WHITE);
     _canvas.drawRect(vwX-1, vwY-1, vwW+2, vwH+2, TFT_WHITE);
     _canvas.drawRect(vwX+1, vwY+1, vwW-2, vwH-2, TFT_BLACK); 
@@ -287,18 +332,19 @@ void Render::drawMenuUI(GameState& state, uint8_t selected_idx, bool flash, bool
         return;
     }
 
+    const int cx = (int)SCREEN_CX;
     _canvas.setTextDatum(middle_center);
     // [V44] 增加标题背景笔触：黑色涂鸦风格
-    drawBrushHighlight(120 - 90, 35 - 12, 180, 24, TFT_BLACK); // [V44.2] Y 45->35
+    drawBrushHighlight(cx - MENU_TITLE_W / 2, MENU_TITLE_Y - 12, MENU_TITLE_W, 24, TFT_BLACK); // [V44.2] Y 45->35
     _canvas.setTextColor(0x4EC0); // [V43] 亮绿色品牌标题 (Vivid Green)
     _canvas.setTextSize(2);
-    _canvas.drawString("AGAR-CARDPUTER", 120, 35);
+    _canvas.drawString(TITLE_STR, cx, MENU_TITLE_Y);
 
     // [V67] 增加版本号显示并修复对齐重置
     _canvas.setTextSize(1);
     _canvas.setTextColor(TFT_DARKGREY);
     _canvas.setTextDatum(top_left);
-    _canvas.drawString("v1.2", 120 + 85, 24);
+    _canvas.drawString(GAME_VERSION_STR, MENU_VER_X, MENU_VER_Y);
 
     _canvas.setTextDatum(middle_center); // 关键：恢复居中对齐，防止后续菜单选项偏移
     _canvas.setTextSize(1);
@@ -308,21 +354,21 @@ void Render::drawMenuUI(GameState& state, uint8_t selected_idx, bool flash, bool
 
     // 选项 1: Create Room
     if (selected_idx == 0) {
-        if (draw_bg) drawBrushHighlight(120 - 90, 95 - 12, 180, 24, 0xFB56); 
+        if (draw_bg) drawBrushHighlight(cx - MENU_OPT_W / 2, MENU_OPT1_Y - 12, MENU_OPT_W, 24, 0xFB56); 
         _canvas.setTextColor(draw_bg ? TFT_WHITE : TFT_BLACK); 
     } else {
         _canvas.setTextColor(TFT_BLACK);
     }
-    _canvas.drawString("Create Room (Master Mode)", 120, 95);
+    _canvas.drawString("Create Room (Master Mode)", cx, MENU_OPT1_Y);
 
     // 选项 2: Join Room
     if (selected_idx == 1) {
-        if (draw_bg) drawBrushHighlight(120 - 90, 115 - 12, 180, 24, 0xFB56); 
+        if (draw_bg) drawBrushHighlight(cx - MENU_OPT_W / 2, MENU_OPT2_Y - 12, MENU_OPT_W, 24, 0xFB56); 
         _canvas.setTextColor(draw_bg ? TFT_WHITE : TFT_BLACK);
     } else {
         _canvas.setTextColor(TFT_BLACK);
     }
-    _canvas.drawString("Join Room (Guest Mode)", 120, 115);
+    _canvas.drawString("Join Room (Guest Mode)", cx, MENU_OPT2_Y);
 }
 
 void Render::drawBrushHighlight(int x, int y, int w, int h, uint16_t color) {

@@ -1,4 +1,6 @@
+#ifndef TARGET_STOPWATCH
 #include <M5Cardputer.h>
+#endif
 #include <M5Unified.h>
 #include <WiFi.h>
 #include "src/GameState.h"
@@ -104,6 +106,11 @@ void onMessageReceived(const uint8_t* mac_addr, const uint8_t* data, int len) {
 
 void setup() {
     auto cfg = M5.config();
+#ifdef TARGET_STOPWATCH
+    // [V70] StopWatch：圆形 AMOLED，仅使用 M5Unified；不设置旋转
+    M5.begin(cfg);
+    M5.Display.fillScreen(TFT_BLACK);
+#else
     // [V67] 适配多种硬件初始化：如果是 Cardputer 则调用其专用 begin，否则仅使用 M5Unified
     if (M5.getBoard() == m5::board_t::board_M5Cardputer) {
         M5Cardputer.begin(cfg, true);
@@ -112,6 +119,7 @@ void setup() {
     }
 
     M5.Display.setRotation(1);
+#endif
     
     // [V56] 启动硬件 IMU
     M5.Imu.init();
@@ -190,14 +198,20 @@ void loop() {
                 WiFi.macAddress(req.mac);
                 g_comm->broadcast((uint8_t*)&req, sizeof(req));
             }
-            if (g_input->keyPressed(0x08) || g_input->keyPressed(0x7F)) {
+            if (g_input->keyPressed(0x08) || g_input->keyPressed(0x7F) || g_input->touchBegan()) { // [V70] 触摸屏点击取消
                 g_waiting_for_sync = false;
                 g_game->init(0, "Demo", 0);
                 delay(200);
             }
             g_renderer->drawConnectingOverlay(true);
         } else if (g_item_flash_timer == 0) { 
-            if (g_input->keyPressed(';')) {
+            if (g_input->menuTouchIndex() >= 0) { // [V70] 触摸点击菜单项：选中并确认
+                if (g_confirm_flash_timer == 0) {
+                    g_selected_menu_idx = (uint8_t)g_input->menuTouchIndex();
+                    g_item_flash_timer = millis() + 400;
+                    g_haptics->vibrate(100);
+                }
+            } else if (g_input->keyPressed(';')) {
                 if (g_selected_menu_idx > 0) g_selected_menu_idx--;
                 else g_selected_menu_idx = 1; // [V69] 循环切换
                 g_haptics->vibrate(40);
@@ -215,6 +229,12 @@ void loop() {
             }
         }
     } else {
+        // [V70] 游戏中触摸轻震 (仅按下瞬间触发，最小间隔 80ms，拖动不重复)
+        static uint32_t last_touch_vibr_ms = 0;
+        if (g_input->touchBegan() && (now - last_touch_vibr_ms) >= 80) {
+            g_haptics->vibrate(15);
+            last_touch_vibr_ms = now;
+        }
         // [V56] 切换显隐开关
         if (g_input->isLeaderboardPressed()) {
             g_show_leaderboard = !g_show_leaderboard;
